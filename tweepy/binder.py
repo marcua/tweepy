@@ -83,9 +83,9 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
             # Open connection
             # FIXME: add timeout
             if api.secure:
-                conn = httplib.HTTPSConnection(_host)
+                conn = http.client.HTTPSConnection(_host)
             else:
-                conn = httplib.HTTPConnection(_host)
+                conn = http.client.HTTPConnection(_host)
 
             # Apply authentication
             if api.auth_handler:
@@ -119,9 +119,12 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
 
         # Parse json respone body
         try:
-            jobject = json.loads(resp.read())
-        except Exception:
-            raise TweepError("Failed to parse json response text")
+            # Python 3: we must first convert the bytes string to unicode
+            # before passing it into json.loads otherwise it errors.
+            jobject = json.loads(resp.read().decode())
+        except Exception as e:
+            #raise TweepError("Failed to parse json response text: %s" % e)
+            raise e
 
         # Parse cursor infomation
         if isinstance(jobject, dict):
