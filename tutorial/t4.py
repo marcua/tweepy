@@ -16,7 +16,7 @@ Here is an example:
 try:
   tweepy.api.update_status('this will fail since we are not authenticated!')
 except tweepy.TweepError as e:
-    print('Failed to update! %s' % e)
+    print(('Failed to update! %s' % e))
 
 """
 TweepError's can be casted to string format which will
@@ -43,9 +43,9 @@ between each attempt.
 """
 try:
     tweepy.api.friends_timeline(retry_count=5, retry_delay=5)
-except tweepy.TweepError, e:
+except tweepy.TweepError as e:
     # If all 5 attempts fail a TweepError will be thrown
-    print 'Failed to get timeline: %s' % e
+    print('Failed to get timeline: %s' % e)
 
 """
 By default Tweepy will only retry when a status code of 500, 502, or 503
@@ -57,8 +57,8 @@ Here is how we do that...
 """
 try:
     tweepy.api.user_timeline('twitter', retry_count=3, retry_delay=5, retry_errors=[400])
-except tweepy.TweepError, e:
-    print 'Failed to get timeline: %s' % e
+except tweepy.TweepError as e:
+    print('Failed to get timeline: %s' % e)
 
 """ The End """
 

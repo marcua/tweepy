@@ -19,10 +19,10 @@ class AuthHandler(object):
 class BasicAuthHandler(AuthHandler):
 
     def __init__(self, username, password):
-    self._b64up = base64.b64encode(bytes('%s:%s' % (username, password), 'ascii'))
+        self._b64up = base64.b64encode(bytes('%s:%s' % (username, password), 'ascii'))
 
     def apply_auth(self, url, method, headers, parameters):
-    headers['Authorization'] = 'Basic %s' % self._b64up.decode()
+        headers['Authorization'] = 'Basic %s' % self._b64up.decode()
 
 
 class OAuthHandler(AuthHandler):

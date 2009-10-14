@@ -21,7 +21,7 @@ except ImportError:
         try:
             from django.utils import simplejson as json #Google App Engine
         except ImportError:
-            raise ImportError, "Can't load a json library"
+            raise ImportError("Can't load a json library")
 
 STREAM_VERSION = 1
 
@@ -175,7 +175,7 @@ class Stream(object):
             self.url += '&follow=%s' % ','.join(follow)
         if track:
             self.url += '&track=%s' % ','.join(track)
-        print self.url
+        print(self.url)
         self.running = True
         Thread(target=self._run).start()
 

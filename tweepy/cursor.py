@@ -36,7 +36,7 @@ class BaseIterator(object):
         self.kargs = kargs
         self.limit = 0
 
-    def next(self):
+    def __next__(self):
         raise NotImplementedError
 
     def prev(self):
@@ -53,7 +53,7 @@ class CursorIterator(BaseIterator):
         self.prev_cursor = 0
         self.count = 0
 
-    def next(self):
+    def __next__(self):
         if self.next_cursor == 0 or (self.limit and self.count == self.limit):
             raise StopIteration
         data, self.next_cursor, self.prev_cursor = self.method(
@@ -77,7 +77,7 @@ class PageIterator(BaseIterator):
         BaseIterator.__init__(self, method, args, kargs)
         self.current_page = 0
 
-    def next(self):
+    def __next__(self):
         self.current_page += 1
         items = self.method(page=self.current_page, *self.args, **self.kargs)
         if len(items) == 0 or (self.limit > 0 and self.current_page > self.limit):
@@ -99,12 +99,12 @@ class ItemIterator(BaseIterator):
         self.page_index = -1
         self.count = 0
 
-    def next(self):
+    def __next__(self):
         if self.limit > 0 and self.count == self.limit:
             raise StopIteration
         if self.current_page is None or self.page_index == len(self.current_page) - 1:
             # Reached end of current page, get the next page...
-            self.current_page = self.page_iterator.next()
+            self.current_page = next(self.page_iterator)
             self.page_index = -1
         self.page_index += 1
         self.count += 1

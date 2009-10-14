@@ -17,7 +17,7 @@ First let's do a simple loop iterating through the first
 do this without the Cursor helper object which we will 
 demonstrate later on.
 """
-print 'Pagination without Cursor...'
+print('Pagination without Cursor...')
 count = 0
 current_page = 1
 running = True
@@ -33,10 +33,10 @@ while running:
             running = False
             break
         count += 1
-        print status.text
+        print(status.text)
     current_page += 1
 
-print ''
+print('')
 
 """
 While the above works correctly, it does
@@ -45,13 +45,13 @@ manually. This is not a really pretty way to paginate.
 Now we will perform the same action, but
 using the Cursor object.
 """
-print 'Pagination with cursor...'
+print('Pagination with cursor...')
 cursor = tweepy.Cursor(api.friends_timeline)
 for status in cursor.items(limit=30):
 
-    print status.text
+    print(status.text)
 
-print ''
+print('')
 
 """
 As you can see this is much simpler and all the
@@ -78,12 +78,12 @@ you only need to update Tweepy.
 """
 Let's do one more example, this time iterating by "pages".
 """
-print 'Pagination of friends ids page by page...'
+print('Pagination of friends ids page by page...')
 cursor = tweepy.Cursor(api.friends_ids)
 for page in cursor.pages():
 
-    print page
+    print(page)
 
-print ''
+print('')
 
 # TODO: demo next() and prev()

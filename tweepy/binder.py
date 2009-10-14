@@ -52,7 +52,7 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
 
         # Build url with parameters
         if parameters:
-            url = '%s?%s' % (api.api_root + path, urllib.urlencode(parameters))
+            url = '%s?%s' % (api.api_root + path, urllib.parse.urlencode(parameters))
         else:
             url = api.api_root + path
 

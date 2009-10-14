@@ -298,7 +298,7 @@ class API(object):
                     path = '/account/verify_credentials.json',
                     parser = parse_user
                 )(self)
-            except TweepError, e:
+            except TweepError as e:
                 raise TweepError('Failed to fetch username: %s' % e)
 
             self._username = user.screen_name
@@ -1031,7 +1031,7 @@ class API(object):
         try:
             if os.path.getsize(filename) > (max_size * 1024):
                 raise TweepError('File is too big, must be less than 700kb.')
-        except os.error, e:
+        except os.error as e:
             raise TweepError('Unable to access file')
 
         # image must be gif, jpeg, or png

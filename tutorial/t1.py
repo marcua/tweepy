@@ -37,7 +37,7 @@ To do this you will ask the OAuthHandler for the authorization URL
 which you will then display to the user OR open their browser to that URL.
 For this example we will just print the URL to the console.
 """
-print('Please authorize us: %s' % oauth_auth.get_authorization_url())
+print(('Please authorize us: %s' % oauth_auth.get_authorization_url()))
 
 """
 Now that we have been authorized, we must fetch the access token.
@@ -53,7 +53,7 @@ Okay we are all set then with OAuth. If you want to store the access
 token for later use, here's how...
 """
 access_token = oauth_auth.access_token
-print('Access token: %s' % access_token)
+print(('Access token: %s' % access_token))
 
 """
 For later use we will keep the token pickled into a file.

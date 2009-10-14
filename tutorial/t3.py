@@ -35,7 +35,7 @@ tweepy.models['status'] = MyStatus
 Now to test out our new status model...
 """
 s = tweepy.api.get_status(123)
-print('Length of status 123: %i' % s.length())
+print(('Length of status 123: %i' % s.length()))
 
 """
 As you can see once you register your model with tweepy
@@ -57,7 +57,7 @@ try:
     u = tweepy.api.get_user('twitter')
 except TweepError as e:
     # will be raised if user is invalid OR request failed
-    print('Failed to get user: %s' % e)
+    print(('Failed to get user: %s' % e))
 
 """
 To disable auto validation...
@@ -74,7 +74,7 @@ friends by using the User model friends() shortcut...
 u = tweepy.api.get_user('twitter')
 friends = u.friends()
 for friend in friends:
-    print(friend.screen_name)
+    print((friend.screen_name))
 
 """
 To learn about all shortcuts check out the reference documentation.

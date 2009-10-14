@@ -8,14 +8,14 @@ import tweepy
 class StreamWatcherListener(tweepy.StreamListener):
 
     def on_status(self, status):
-        print status.text
+        print(status.text)
 
     def on_error(self, status_code):
-        print 'An error has occured! Status code = %s' % status_code
+        print('An error has occured! Status code = %s' % status_code)
         return True  # keep stream alive
 
     def on_timeout(self):
-        print 'Snoozing Zzzzzz'
+        print('Snoozing Zzzzzz')
 
 # Prompt for login credentials and setup stream object
 username = input('Twitter username: ')
@@ -42,13 +42,13 @@ while True:
         stream.filter(follow_list, track_list)
         break
     else:
-        print 'Invalid choice! Try again.'
+        print('Invalid choice! Try again.')
 
 # Run in a loop until termination
 while True:
     try:
         if stream.running is False:
-            print 'Stream stopped!'
+            print('Stream stopped!')
             break
         time.sleep(1)
     except KeyboardInterrupt:
@@ -56,5 +56,5 @@ while True:
 
 # Shutdown connection
 stream.disconnect()
-print 'Bye!'
+print('Bye!')
 
