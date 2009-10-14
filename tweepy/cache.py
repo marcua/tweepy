@@ -106,7 +106,7 @@ class MemoryCache(Cache):
 
     def cleanup(self):
         with self.lock:
-            for k, v in self._entries.items():
+            for k, v in list(self._entries.items()):
                 if self._is_expired(v, self.timeout):
                     del self._entries[k]
 
@@ -145,7 +145,7 @@ class FileCache(Cache):
 
     def _get_path(self, key):
         md5 = hashlib.md5()
-        md5.update(key)
+        md5.update(key.encode())
         return os.path.join(self.cache_dir, md5.hexdigest())
 
     def _lock_file_dummy(self, path, exclusive=True):
