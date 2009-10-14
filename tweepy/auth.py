@@ -73,3 +73,24 @@ class OAuthHandler(AuthHandler):
         except Exception as e:
             raise TweepError(e)
 
+    def get_access_token(self, verifier=None):
+        """
+        After user has authorized the request token, get access token
+        with user supplied verifier.
+        """
+        try:
+            # build request
+            request = oauth.OAuthRequest.from_consumer_and_token(
+                self._consumer,
+                token=self.request_token, http_url=self.ACCESS_TOKEN_URL,
+                verifier=str(verifier)
+            )
+            request.sign_request(self._sigmethod, self._consumer, self.request_token)
+ 
+            # send request
+            resp = urlopen(Request(self.ACCESS_TOKEN_URL, headers=request.to_header()))
+            self.access_token = oauth.OAuthToken.from_string(resp.read().decode())
+            return self.access_token
+        except Exception as e:
+            raise TweepError(e)
+
