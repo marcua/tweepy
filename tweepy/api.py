@@ -15,7 +15,7 @@ class API(object):
 
     def __init__(self, auth_handler=None, host='twitter.com', cache=None,
             secure=False, api_root='', validate=True,
-            retry_count=0, retry_delay=0, retry_errors=[500,502,503]):
+            retry_count=0, retry_delay=0, retry_errors=None):
         # you may access these freely
         self.auth_handler = auth_handler
         self.host = host
@@ -618,7 +618,7 @@ class API(object):
         http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-account%C2%A0update_profile_image
     """
     def update_profile_image(self, filename):
-        headers, post_data = _pack_image(filename, 700)
+        headers, post_data = API._pack_image(filename, 700)
         bind_api(
             path = '/account/update_profile_image.json',
             method = 'POST',
@@ -638,7 +638,7 @@ class API(object):
         http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-account%C2%A0update_profile_background_image
     """
     def update_profile_background_image(self, filename, *args, **kargs):
-        headers, post_data = _pack_image(filename, 800)
+        headers, post_data = API._pack_image(filename, 800)
         bind_api(
             path = '/account/update_profile_background_image.json',
             method = 'POST',
@@ -691,13 +691,14 @@ class API(object):
 
         http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-favorites%C2%A0create
     """
-    create_favorite = bind_api(
-        path = '/favorites/create.json',
-        method = 'POST',
-        parser = parse_status,
-        allowed_param = ['id'],
-        require_auth = True
-    )
+    def create_favorite(self, id):
+        return bind_api(
+            path = '/favorites/create/%s.json' % id,
+            method = 'POST',
+            parser = parse_status,
+            allowed_param = ['id'],
+            require_auth = True
+        )(self, id)
 
     """ favorites/destroy
 
@@ -709,13 +710,14 @@ class API(object):
 
         http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-favorites%C2%A0destroy
     """
-    destroy_favorite = bind_api(
-        path = '/favorites/destroy.json',
-        method = 'DELETE',
-        parser = parse_status,
-        allowed_param = ['id'],
-        require_auth = True
-    )
+    def destroy_favorite(self, id):
+        return bind_api(
+            path = '/favorites/destroy/%s.json' % id,
+            method = 'DELETE',
+            parser = parse_status,
+            allowed_param = ['id'],
+            require_auth = True
+        )(self, id)
 
     """ notifications/follow
 
@@ -799,14 +801,14 @@ class API(object):
 
         http://apiwiki.twitter.com/Twitter+REST+API+Method%3A-blocks-exists
     """
-    def exists_block(self, **kargs):
+    def exists_block(self, *args, **kargs):
         try:
             bind_api(
                 path = '/blocks/exists.json',
                 parser = parse_none,
                 allowed_param = ['id', 'user_id', 'screen_name'],
                 require_auth = True
-            )(self, **kargs)
+            )(self, *args, **kargs)
         except TweepError:
             return False
 
@@ -842,6 +844,24 @@ class API(object):
     blocks_ids = bind_api(
         path = '/blocks/blocking/ids.json',
         parser = parse_json,
+        require_auth = True
+    )
+
+    """ report_spam
+
+        The user specified in the id is blocked by the authenticated user
+        and reported as a spammer.
+
+        Parameters: id or user_id or screen_name
+        Returns: User
+
+        http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-report_spam
+    """
+    report_spam = bind_api(
+        path = '/report_spam.json',
+        method = 'POST',
+        parser = parse_user,
+        allowed_param = ['id', 'user_id', 'screen_name'],
         require_auth = True
     )
 
@@ -1025,6 +1045,7 @@ class API(object):
 
     """ Internal use only """
 
+    @staticmethod
     def _pack_image(filename, max_size):
         """Pack image from file into multipart-formdata post body"""
         # image must be less than 700kb in size

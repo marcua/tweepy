@@ -33,6 +33,8 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
         if allowed_param:
             parameters = {}
             for idx, arg in enumerate(args):
+                if isinstance(arg, unicode):
+                    arg = arg.encode('utf-8')
                 try:
                     parameters[allowed_param[idx]] = arg
                 except IndexError:
@@ -44,6 +46,8 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
                     raise TweepError('Multiple values for parameter %s supplied!' % k)
                 if k not in allowed_param:
                     raise TweepError('Invalid parameter %s supplied!' % k)
+                if isinstance(arg, unicode):
+                    arg = arg.encode('utf-8')
                 parameters[k] = arg
         else:
             if len(args) > 0 or len(kargs) > 0:
@@ -101,8 +105,10 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
             resp = conn.getresponse()
 
             # Exit request loop if non-retry error code
-            if resp.status not in retry_errors:
-                break
+            if retry_errors is None:
+                if resp.status == 200: break
+            else:
+                if resp.status not in retry_errors: break
 
             # Sleep before retrying request again
             time.sleep(retry_delay)
@@ -112,7 +118,7 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
         api.last_response = resp
         if resp.status != 200:
             try:
-                error_msg = parse_error(resp.read())
+                error_msg = parse_error(json.loads(resp.read()))
             except Exception:
                 error_msg = "Twitter error response: status code = %s" % resp.status
             raise TweepError(error_msg)
