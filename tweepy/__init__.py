@@ -5,14 +5,16 @@
 """
 Tweepy Twitter API library
 """
-__version__ = '1.0'
+__version__ = '1.2'
 
-from .models import *
+from .models import Status, User, DirectMessage, Friendship, SavedSearch, SearchResult, models
 from .error import TweepError
 from .api import API
-from .cache import *
+from .cache import Cache, MemoryCache, FileCache, MemCache
 from .auth import BasicAuthHandler, OAuthHandler
-from .streaming import Stream
+from .streaming import Stream, StreamListener
+from .cursor import Cursor
 
 # Global, unauthenticated instance of API
 api = API()
+

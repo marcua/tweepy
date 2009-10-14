@@ -1,117 +1,171 @@
 # Tweepy
 # Copyright 2009 Joshua Roesslein
 # See LICENSE
-
 import http.client
 import urllib.request, urllib.parse, urllib.error
+import time
+import json
 
 from .parsers import parse_error
 from .error import TweepError
 
-def bind_api(path, parser, allowed_param=None, method='GET', require_auth=False,
+
+def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
               timeout=None, host=None):
 
-  def _call(api, *args, **kargs):
-    # If require auth, throw exception if credentials not provided
-    if require_auth and not api.auth_handler:
-      raise TweepError('Authentication required!')
+    def _call(api, *args, **kargs):
+        # If require auth, throw exception if credentials not provided
+        if require_auth and not api.auth_handler:
+            raise TweepError('Authentication required!')
 
-    # check for post_data parameter
-    if 'post_data' in kargs:
-      post_data = kargs['post_data']
-      del kargs['post_data']
-    else:
-      post_data = None
+        # check for post data
+        post_data = kargs.pop('post_data', None)
 
-    # check for headers
-    if 'headers' in kargs:
-      headers = dict(kargs['headers'])
-      del kargs['headers']
-    else:
-      headers = {}
+        # check for retry request parameters
+        retry_count = kargs.pop('retry_count', api.retry_count)
+        retry_delay = kargs.pop('retry_delay', api.retry_delay)
+        retry_errors = kargs.pop('retry_errors', api.retry_errors)
 
-    # build parameter dict
-    if allowed_param:
-      parameters = {}
-      for idx, arg in enumerate(args):
+        # check for headers
+        headers = kargs.pop('headers', {})
+
+        # build parameter dict
+        if allowed_param:
+            parameters = {}
+            for idx, arg in enumerate(args):
+                try:
+                    parameters[allowed_param[idx]] = arg
+                except IndexError:
+                    raise TweepError('Too many parameters supplied!')
+            for k, arg in kargs.items():
+                if arg is None:
+                    continue
+                if k in parameters:
+                    raise TweepError('Multiple values for parameter %s supplied!' % k)
+                if k not in allowed_param:
+                    raise TweepError('Invalid parameter %s supplied!' % k)
+                parameters[k] = arg
+        else:
+            if len(args) > 0 or len(kargs) > 0:
+                raise TweepError('This method takes no parameters!')
+            parameters = None
+
+        # Build url with parameters
+        if parameters:
+            url = '%s?%s' % (api.api_root + path, urllib.urlencode(parameters))
+        else:
+            url = api.api_root + path
+
+        # Check cache if caching enabled and method is GET
+        if api.cache and method == 'GET':
+            cache_result = api.cache.get(url, timeout)
+            # if cache result found and not expired, return it
+            if cache_result:
+                # must restore api reference
+                if isinstance(cache_result, list):
+                    for result in cache_result:
+                        result._api = api
+                else:
+                    cache_result._api = api
+                return cache_result
+
+        # get scheme and host
+        if api.secure:
+            scheme = 'https://'
+        else:
+            scheme = 'http://'
+        _host = host or api.host
+
+        # Continue attempting request until successful
+        # or maxium number of retries is reached.
+        retries_performed = 0
+        while retries_performed < retry_count + 1:
+            # Open connection
+            # FIXME: add timeout
+            if api.secure:
+                conn = httplib.HTTPSConnection(_host)
+            else:
+                conn = httplib.HTTPConnection(_host)
+
+            # Apply authentication
+            if api.auth_handler:
+                api.auth_handler.apply_auth(
+                        scheme + _host + url,
+                        method, headers, parameters
+                )
+
+            # Build request
+            conn.request(method, url, headers=headers, body=post_data)
+
+            # Get response
+            resp = conn.getresponse()
+
+            # Exit request loop if non-retry error code
+            if resp.status not in retry_errors:
+                break
+
+            # Sleep before retrying request again
+            time.sleep(retry_delay)
+            retries_performed += 1
+
+        # If an error was returned, throw an exception
+        api.last_response = resp
+        if resp.status != 200:
+            try:
+                error_msg = parse_error(resp.read())
+            except Exception:
+                error_msg = "Twitter error response: status code = %s" % resp.status
+            raise TweepError(error_msg)
+
+        # Parse json respone body
         try:
-          parameters[allowed_param[idx]] = arg
-        except IndexError:
-          raise TweepError('Too many parameters supplied!')
-      for k, arg in list(kargs.items()):
-        if k in parameters:
-          raise TweepError('Multiple values for parameter %s supplied!' % k)
-        if k not in allowed_param:
-          raise TweepError('Invalid parameter %s supplied!' % k)
-        parameters[k] = arg
-    else:
-      if len(args) > 0 or len(kargs) > 0:
-        raise TweepError('This method takes no parameters!')
-      parameters = None
+            jobject = json.loads(resp.read())
+        except Exception:
+            raise TweepError("Failed to parse json response text")
 
-    # Build url with parameters
-    if parameters:
-      url = '%s?%s' % (api.api_root + path, urllib.parse.urlencode(parameters))
-    else:
-      url = api.api_root + path
+        # Parse cursor infomation
+        if isinstance(jobject, dict):
+            next_cursor = jobject.get('next_cursor')
+            prev_cursor = jobject.get('previous_cursor')
+        else:
+            next_cursor = None
+            prev_cursor = None
 
-    # get scheme and host
-    if api.secure:
-      scheme = 'https://'
-    else:
-      scheme = 'http://'
-    _host = host or api.host
+        # Pass json object into parser
+        try:
+            if next_cursor is not None and prev_cursor is not None:
+                out = parser(jobject, api), next_cursor, prev_cursor
+            else:
+                out = parser(jobject, api)
+        except Exception:
+            raise TweepError("Failed to parse json object")
 
-    # Apply authentication
-    if api.auth_handler:
-      api.auth_handler.apply_auth(scheme + _host + url, method, headers, parameters)
+        conn.close()
 
-    # Check cache if caching enabled and method is GET
-    if api.cache and method == 'GET':
-      cache_result = api.cache.get(url, timeout)
-      if cache_result:
-        # if cache result found and not expired, return it
-        cache_result._api = api  # restore api reference to this api instance
-        return cache_result
+        # validate result
+        if api.validate:
+            # list of results
+            if isinstance(out, list) and len(out) > 0:
+                if hasattr(out[0], 'validate'):
+                    for result in out:
+                        result.validate()
+            # single result
+            else:
+                if hasattr(out, 'validate'):
+                    out.validate()
 
-    # Open connection
-    if api.secure:
-      conn = http.client.HTTPSConnection(_host, timeout=10.0)
-    else:
-      conn = http.client.HTTPConnection(_host, timeout=10.0)
+        # store result in cache
+        if api.cache and method == 'GET':
+            api.cache.store(url, out)
 
-    # Build request
-    conn.request(method, url, headers=headers, body=post_data)
+        return out
 
-    # Get response
-    resp = conn.getresponse()
 
-    # If an error was returned, throw an exception
-    if resp.status == 500:
-      raise TweepError('Twitter server error!')
-    if resp.status != 200:
-      raise TweepError(parse_error(resp.read().decode()))
+    # Set pagination mode
+    if 'cursor' in allowed_param:
+        _call.pagination_mode = 'cursor'
+    elif 'page' in allowed_param:
+        _call.pagination_mode = 'page'
 
-    # Pass returned body into parser and return parser output
-    out =  parser(resp.read().decode(), api)
-    conn.close()
+    return _call
 
-    # validate result
-    if api.validate:
-      # list of results
-      if isinstance(out, list) and len(out) > 0:
-        if hasattr(out[0], 'validate'):
-          for result in out:
-            result.validate()
-      # single result
-      else:
-        if hasattr(out, 'validate'):
-          out.validate()
-
-    # store result in cache
-    if api.cache and method == 'GET':
-      api.cache.store(url, out)
-
-    return out
-
-  return _call

@@ -5,48 +5,56 @@ from getpass import getpass
 
 import tweepy
 
-def callback(t, stream_object):
-  if t == 'status':
-    print(stream_object.text)   
-  elif t == 'delete':
-    print('delete!!!  id = %s' % stream_object['id'])
-  elif t == 'limit':
-    print('limit!!! track=%s' % stream_object['track'])
+class StreamWatcherListener(tweepy.StreamListener):
+
+    def on_status(self, status):
+        print status.text
+
+    def on_error(self, status_code):
+        print 'An error has occured! Status code = %s' % status_code
+        return True  # keep stream alive
+
+    def on_timeout(self):
+        print 'Snoozing Zzzzzz'
 
 # Prompt for login credentials and setup stream object
 username = input('Twitter username: ')
 password = getpass('Twitter password: ')
-stream = tweepy.Stream(username, password, callback)
+stream = tweepy.Stream(username, password, StreamWatcherListener())
 
 # Prompt for mode of streaming and connect
 while True:
-  mode = input('Mode? [spritzer/follow/track] ')
-  if mode == 'spritzer':
-    stream.spritzer()
-    break
-  elif mode == 'follow':
-    follow_list = input('Users to follow (comma separated): ')
-    stream.follow(follow_list)
-    break
-  elif mode == 'track':
-    track_list = input('Keywords to track (comma separated): ')
-    stream.track(track_list)
-    break
-  else:
-    print('Invalid choice! Try again.')
+    mode = input('Mode? [sample/filter] ')
+    if mode == 'sample':
+        stream.sample()
+        break
+    elif mode == 'filter':
+        follow_list = input('Users to follow (comma separated): ').strip()
+        track_list = input('Keywords to track (comma seperated): ').strip()
+        if follow_list:
+            follow_list = [u for u in follow_list.split(',')]
+        else:
+            follow_list = None
+        if track_list:
+            track_list = [k for k in track_list.split(',')]
+        else:
+            track_list = None
+        stream.filter(follow_list, track_list)
+        break
+    else:
+        print 'Invalid choice! Try again.'
 
 # Run in a loop until termination
 while True:
-  try:
-    if stream.running is False:
-      print('Stream stopped!')
-      break
-    time.sleep(1)
-  except KeyboardInterrupt:
-    break
+    try:
+        if stream.running is False:
+            print 'Stream stopped!'
+            break
+        time.sleep(1)
+    except KeyboardInterrupt:
+        break
 
 # Shutdown connection
 stream.disconnect()
-
-print('Bye!')
+print 'Bye!'
 
