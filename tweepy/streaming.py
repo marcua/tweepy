@@ -7,10 +7,10 @@ from socket import timeout
 from threading import Thread
 from time import sleep
 
-from . auth import BasicAuthHandler
-from . parsers import parse_status
-from . api import API
-from . error import TweepError
+from tweepy.auth import BasicAuthHandler
+from tweepy.parsers import parse_status
+from tweepy.api import API
+from tweepy.error import TweepError
 
 try:
     import json #Python >= 2.6
@@ -175,7 +175,6 @@ class Stream(object):
             self.url += '&follow=%s' % ','.join(follow)
         if track:
             self.url += '&track=%s' % ','.join(track)
-        print(self.url)
         self.running = True
         Thread(target=self._run).start()
 

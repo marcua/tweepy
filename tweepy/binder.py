@@ -6,8 +6,19 @@ import urllib.request, urllib.parse, urllib.error
 import time
 import json
 
-from .parsers import parse_error
-from .error import TweepError
+from tweepy.parsers import parse_error
+from tweepy.error import TweepError
+
+try:
+    import json #Python >= 2.6
+except ImportError:
+    try:
+        import simplejson as json #Python < 2.6
+    except ImportError:
+        try:
+            from django.utils import simplejson as json #Google App Engine
+        except ImportError:
+            raise ImportError, "Can't load a json library"
 
 
 def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
@@ -77,7 +88,7 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
         _host = host or api.host
 
         # Continue attempting request until successful
-        # or maxium number of retries is reached.
+        # or maximum number of retries is reached.
         retries_performed = 0
         while retries_performed < retry_count + 1:
             # Open connection
@@ -95,7 +106,10 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
                 )
 
             # Build request
-            conn.request(method, url, headers=headers, body=post_data)
+            try:
+                conn.request(method, url, headers=headers, body=post_data)
+            except Exception, e:
+                raise TweepError('Failed to send request: %s' % e)
 
             # Get response
             resp = conn.getresponse()
@@ -125,8 +139,7 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
             # before passing it into json.loads otherwise it errors.
             jobject = json.loads(resp.read().decode())
         except Exception as e:
-            #raise TweepError("Failed to parse json response text: %s" % e)
-            raise e
+            raise TweepError("Failed to parse json: %s" % e)
 
         # Parse cursor infomation
         if isinstance(jobject, dict):
@@ -142,22 +155,10 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
                 out = parser(jobject, api), next_cursor, prev_cursor
             else:
                 out = parser(jobject, api)
-        except Exception:
-            raise TweepError("Failed to parse json object")
+        except Exception, e:
+            raise TweepError("Failed to parse response: %s" % e)
 
         conn.close()
-
-        # validate result
-        if api.validate:
-            # list of results
-            if isinstance(out, list) and len(out) > 0:
-                if hasattr(out[0], 'validate'):
-                    for result in out:
-                        result.validate()
-            # single result
-            else:
-                if hasattr(out, 'validate'):
-                    out.validate()
 
         # store result in cache
         if api.cache and method == 'GET':

@@ -5,8 +5,10 @@
 import html.entities
 import re
 from datetime import datetime
+import time
 
-from .models import models
+from tweepy.models import models
+
 
 def _parse_cursor(obj):
 
@@ -34,12 +36,14 @@ def parse_error(obj):
 
 def _parse_datetime(str):
 
-    return datetime.strptime(str, '%a %b %d %H:%M:%S +0000 %Y')
+    # We must parse datetime this way to work in python 2.4
+    return datetime(*(time.strptime(str, '%a %b %d %H:%M:%S +0000 %Y')[0:6]))
 
 
 def _parse_search_datetime(str):
 
-    return datetime.strptime(str, '%a, %d %b %Y %H:%M:%S +0000')
+    # python 2.4
+    return datetime(*(time.strptime(str, '%a, %d %b %Y %H:%M:%S +0000')[0:6]))
 
 
 def unescape_html(text):
@@ -263,4 +267,21 @@ def parse_retweets(obj, api):
     for item in obj:
         retweets.append(_parse_retweet(item, api))
     return retweets
+
+def parse_list(obj, api):
+
+    lst = models['list']()
+    for k,v in obj.items():
+        if k == 'user':
+            setattr(lst, k, _parse_user(v, api))
+        else:
+            setattr(lst, k, v)
+    return lst
+
+def parse_lists(obj, api):
+
+    lists = []
+    for item in obj:
+        lists.append(parse_list(item, api))
+    return lists
 

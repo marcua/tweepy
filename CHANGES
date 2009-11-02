@@ -1,7 +1,16 @@
 All changes made to the library that might affect applications
 during upgrade will be listed here.
 
-1.1 -> 1.2
+1.2 -> 1.3 [Future]
+=====================
++ API.verify_credentials() now returns an User object if credentials
+    are valid. Otherwise false will be returned.
++ API.new() removed
++ Removed model validation. Prone to breakage due to API changes.
++ Moved documentation out of api.py and into wiki.
++ Removed 'email' parameter from API.update_profile. No longer supported.
+
+1.1 -> 1.2 [Current]
 =====================
 + API
     + Added automatic request re-try feature
@@ -28,6 +37,8 @@ during upgrade will be listed here.
 + Models
     + Status: added retweet, favorite and retweets methods
       (NOTE: retweet API not live yet on twitter)
+
++ Python 2.4 support
 
 + Update OAuth bundled library.
 

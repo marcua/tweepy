@@ -15,8 +15,7 @@ except ImportError:
     # TODO: use win32file
     pass
 
-from .error import TweepError
-from . import memcache
+from tweepy import memcache
 
 
 class Cache(object):
@@ -77,11 +76,13 @@ class MemoryCache(Cache):
         return timeout > 0 and (time.time() - entry[0]) >= timeout
 
     def store(self, key, value):
-        with self.lock:
-            self._entries[key] = (time.time(), value)
+        self.lock.acquire()
+        self._entries[key] = (time.time(), value)
+        self.lock.release()
 
     def get(self, key, timeout=None):
-        with self.lock:
+        self.lock.acquire()
+        try:
             # check to see if we have this key
             entry = self._entries.get(key)
             if not entry:
@@ -90,29 +91,36 @@ class MemoryCache(Cache):
 
             # use provided timeout in arguments if provided
             # otherwise use the one provided during init.
-            _timeout = self.timeout if timeout is None else timeout
+            if timeout is None:
+                timeout = self.timeout
 
             # make sure entry is not expired
-            if self._is_expired(entry, _timeout):
+            if self._is_expired(entry, timeout):
                 # entry expired, delete and return nothing
                 del self._entries[key]
                 return None
 
             # entry found and not expired, return it
             return entry[1]
+        finally:
+            self.lock.release()
 
     def count(self):
         return len(self._entries)
 
     def cleanup(self):
-        with self.lock:
-            for k, v in list(self._entries.items()):
+        self.lock.acquire()
+        try:
+            for k, v in self._entries.items():
                 if self._is_expired(v, self.timeout):
                     del self._entries[k]
+        finally:
+            self.lock.release()
 
     def flush(self):
-        with self.lock:
-            self._entries.clear()
+        self.lock.acquire()
+        self._entries.clear()
+        self.lock.release()
 
 
 class FileCache(Cache):
@@ -185,7 +193,8 @@ class FileCache(Cache):
 
     def store(self, key, value):
         path = self._get_path(key)
-        with self.lock:
+        self.lock.acquire()
+        try:
             # acquire lock and open file
             f_lock = self._lock_file(path)
             datafile = open(path, 'wb')
@@ -196,6 +205,8 @@ class FileCache(Cache):
             # close and unlock file
             datafile.close()
             self._unlock_file(f_lock)
+        finally:
+            self.lock.release()
 
     def get(self, key, timeout=None):
         return self._get(self._get_path(key), timeout)
@@ -204,7 +215,8 @@ class FileCache(Cache):
         if os.path.exists(path) is False:
             # no record
             return None
-        while self.lock:
+        self.lock.acquire()
+        try:
             # acquire lock and open
             f_lock = self._lock_file(path, False)
             datafile = open(path, 'rb')
@@ -214,8 +226,9 @@ class FileCache(Cache):
             datafile.close()
 
             # check if value is expired
-            _timeout = self.timeout if timeout is None else timeout
-            if _timeout > 0 and (time.time() - created_time) >= _timeout:
+            if timeout is None:
+                timeout = self.timeout
+            if timeout > 0 and (time.time() - created_time) >= timeout:
                 # expired! delete from cache
                 value = None
                 self._delete_file(path)
@@ -223,6 +236,8 @@ class FileCache(Cache):
             # unlock and return result
             self._unlock_file(f_lock)
             return value
+        finally:
+            self.lock.release()
 
     def count(self):
         c = 0
@@ -262,8 +277,9 @@ class MemCache(Cache):
         created_time, value = obj
 
         # check if value is expired
-        _timeout = self.timeout if timeout is None else timeout
-        if _timeout > 0 and (time.time() - created_time) >= _timeout:
+        if timeout is None:
+            timeout = self.timeout
+        if timeout > 0 and (time.time() - created_time) >= timeout:
             # expired! delete from cache
             self.client.delete(key)
             return None
