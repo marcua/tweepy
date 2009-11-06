@@ -36,9 +36,10 @@ class BasicAuthHandler(AuthHandler):
 
 class OAuthHandler(AuthHandler):
 
-    REQUEST_TOKEN_URL = 'http://twitter.com/oauth/request_token'
-    AUTHORIZATION_URL = 'http://twitter.com/oauth/authorize'
-    ACCESS_TOKEN_URL = 'http://twitter.com/oauth/access_token'
+    REQUEST_TOKEN_URL = 'http://api.twitter.com/oauth/request_token'
+    AUTHORIZATION_URL = 'http://api.twitter.com/oauth/authorize'
+    AUTHENTICATE_URL = 'http://api.twitter.com/oauth/authenticate'
+    ACCESS_TOKEN_URL = 'http://api.twitter.com/oauth/access_token'
 
     def __init__(self, consumer_key, consumer_secret, callback=None):
         self._consumer = oauth.OAuthConsumer(consumer_key, consumer_secret)
@@ -96,7 +97,7 @@ class OAuthHandler(AuthHandler):
                 verifier=str(verifier)
             )
             request.sign_request(self._sigmethod, self._consumer, self.request_token)
- 
+
             # send request
             resp = urlopen(Request(self.ACCESS_TOKEN_URL, headers=request.to_header()))
             self.access_token = oauth.OAuthToken.from_string(resp.read().decode())

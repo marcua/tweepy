@@ -22,7 +22,7 @@ except ImportError:
 
 
 def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
-              timeout=None, host=None):
+              timeout=None, search_api = False):
 
     def _call(api, *args, **kargs):
         # If require auth, throw exception if credentials not provided
@@ -62,10 +62,11 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
             parameters = None
 
         # Build url with parameters
+        api_root = api.api_root if search_api is False else api.search_root
         if parameters:
-            url = '%s?%s' % (api.api_root + path, urllib.parse.urlencode(parameters))
+            url = '%s?%s' % (api_root + path, urllib.parse.urlencode(parameters))
         else:
-            url = api.api_root + path
+            url = api_root + path
 
         # Check cache if caching enabled and method is GET
         if api.cache and method == 'GET':
@@ -85,7 +86,7 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
             scheme = 'https://'
         else:
             scheme = 'http://'
-        _host = host or api.host
+        host = api.host if search_api is False else api.search_host
 
         # Continue attempting request until successful
         # or maximum number of retries is reached.
@@ -94,14 +95,14 @@ def bind_api(path, parser, allowed_param=[], method='GET', require_auth=False,
             # Open connection
             # FIXME: add timeout
             if api.secure:
-                conn = http.client.HTTPSConnection(_host)
+                conn = http.client.HTTPSConnection(host)
             else:
-                conn = http.client.HTTPConnection(_host)
+                conn = http.client.HTTPConnection(host)
 
             # Apply authentication
             if api.auth:
                 api.auth.apply_auth(
-                        scheme + _host + url,
+                        scheme + host + url,
                         method, headers, parameters
                 )
 
