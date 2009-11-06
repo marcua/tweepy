@@ -109,7 +109,7 @@ class MemoryCache(Cache):
     def cleanup(self):
         self.lock.acquire()
         try:
-            for k, v in self._entries.items():
+            for k, v in list(self._entries.items()):
                 if self._is_expired(v, self.timeout):
                     del self._entries[k]
         finally:
