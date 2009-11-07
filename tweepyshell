@@ -15,7 +15,7 @@ using the credentials provided.
 """
 
 if len(sys.argv) != 3:
-    print 'Usage: tweepyshell <username> <password>'
+    print('Usage: tweepyshell <username> <password>')
     exit(1)
 
 api = API(BasicAuthHandler(username=sys.argv[1], password=sys.argv[2]))
