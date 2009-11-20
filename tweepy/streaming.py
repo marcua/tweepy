@@ -6,23 +6,13 @@ import http.client
 from socket import timeout
 from threading import Thread
 from time import sleep
-import urllib
+import urllib.parse
+import json
 
 from tweepy.auth import BasicAuthHandler
 from tweepy.parsers import parse_status
 from tweepy.api import API
 from tweepy.error import TweepError
-
-try:
-    import json #Python >= 2.6
-except ImportError:
-    try:
-        import simplejson as json #Python < 2.6
-    except ImportError:
-        try:
-            from django.utils import simplejson as json #Google App Engine
-        except ImportError:
-            raise ImportError("Can't load a json library")
 
 STREAM_VERSION = 1
 
@@ -179,7 +169,7 @@ class Stream(object):
             params['follow'] = ','.join(map(str, follow))
         if track:
             params['track'] = ','.join(map(str, track))
-        self.body = urllib.urlencode(params)
+        self.body = urllib.parse.urlencode(params)
         self.running = True
         Thread(target=self._run).start()
 
