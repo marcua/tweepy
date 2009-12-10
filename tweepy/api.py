@@ -104,7 +104,7 @@ class API(object):
         path = '/statuses/update.json',
         method = 'POST',
         parser = parse_status,
-        allowed_param = ['status', 'in_reply_to_status_id', 'lat', 'long'],
+        allowed_param = ['status', 'in_reply_to_status_id', 'lat', 'long', 'source'],
         require_auth = True
     )
 
@@ -188,7 +188,7 @@ class API(object):
         path = '/direct_messages/new.json',
         method = 'POST',
         parser = parse_dm,
-        allowed_param = ['user', 'text'],
+        allowed_param = ['user', 'screen_name', 'user_id', 'text'],
         require_auth = True
     )
 
@@ -461,7 +461,7 @@ class API(object):
             path = '/%s/lists.json' % self.auth.get_username(),
             method = 'POST',
             parser = parse_list,
-            allowed_param = ['name', 'mode'],
+            allowed_param = ['name', 'mode', 'description'],
             require_auth = True
         )(self, *args, **kargs)
 
@@ -478,7 +478,7 @@ class API(object):
             path = '/%s/lists/%s.json' % (self.auth.get_username(), slug),
             method = 'POST',
             parser = parse_list,
-            allowed_param = ['name', 'mode'],
+            allowed_param = ['name', 'mode', 'description'],
             require_auth = True
         )(self, *args, **kargs)
 
