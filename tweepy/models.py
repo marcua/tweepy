@@ -52,6 +52,18 @@ class User(Model):
         self._api.destroy_friendship(user_id=self.id)
         self.following = False
 
+    def lists_memberships(self, *args, **kargs):
+        return self._api.lists_memberships(user=self.screen_name, *args, **kargs)
+
+    def lists_subscriptions(self, *args, **kargs):
+        return self._api.lists_subscriptions(user=self.screen_name, *args, **kargs)
+
+    def lists(self, *args, **kargs):
+        return self._api.lists(user=self.screen_name, *args, **kargs)
+
+    def followers_ids(self, *args, **kargs):
+        return self._api.followers_ids(user_id=self.id, *args, **kargs)
+
 
 class DirectMessage(Model):
 
@@ -81,8 +93,38 @@ class Retweet(Model):
 
 class List(Model):
 
+    def update(self, **kargs):
+        return self._api.update_list(self.slug, **kargs)
+
     def destroy(self):
         return self._api.destroy_list(self.slug)
+
+    def timeline(self, **kargs):
+        return self._api.list_timeline(self.user.screen_name, self.slug, **kargs)
+
+    def add_member(self, id):
+        return self._api.add_list_member(self.slug, id)
+
+    def remove_member(self, id):
+        return self._api.remove_list_member(self.slug, id)
+
+    def members(self, **kargs):
+        return self._api.list_members(self.user.screen_name, self.slug, **kargs)
+
+    def is_member(self, id):
+        return self._api.is_list_member(self.user.screen_name, self.slug, id)
+
+    def subscribe(self):
+        return self._api.subscribe_list(self.user.screen_name, self.slug)
+
+    def unsubscribe(self):
+        return self._api.unsubscribe_list(self.user.screen_name, self.slug)
+
+    def subscribers(self, **kargs):
+        return self._api.list_subscribers(self.user.screen_name, self.slug, **kargs)
+
+    def is_subscribed(self, id):
+        return self._api.is_subscribed_list(self.user.screen_name, self.slug, id)
 
 # link up default model implementations.
 models = {
